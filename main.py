@@ -4,6 +4,7 @@ import smtplib
 from email.mime.text import MIMEText
 from bs4 import BeautifulSoup
 import os
+import time
 
 # REFERANSLAR
 REFERENCE_CODES = ["21530/RD/2022", "21522/RD/2022", "21489/RD/2022"]
@@ -29,7 +30,8 @@ def search_references_in_pdf(pdf_url):
     found_refs = []
     try:
         response = requests.get(pdf_url)
-        filename = "temp.pdf"
+        # Her PDF için benzersiz dosya adı ekle (zaman damgası ile)
+        filename = f"temp_{int(time.time())}.pdf"
         with open(filename, 'wb') as f:
             f.write(response.content)
         doc = fitz.open(filename)
@@ -38,13 +40,11 @@ def search_references_in_pdf(pdf_url):
             for ref in REFERENCE_CODES:
                 if ref in text:
                     found_refs.append(ref)
+        os.remove(filename)  # Geçici dosyayı sil
         return found_refs
     except Exception as e:
         print(f"Hata: {e}")
         return []
-import os
-import smtplib
-from email.mime.text import MIMEText
 
 # E-posta adresini ve şifreyi ortam değişkenlerinden al
 EMAIL = os.environ['EMAIL']
@@ -59,9 +59,13 @@ def send_email(found_refs, pdf_url):
     msg['To'] = "yigit.akasma@gmail.com"
 
     # E-posta gönderimi
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(EMAIL, EMAIL_PASS)  # Gmail hesabına giriş yap
-        smtp.send_message(msg)  # E-postayı gönder
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(EMAIL, EMAIL_PASS)  # Gmail hesabına giriş yap
+            smtp.send_message(msg)  # E-postayı gönder
+    except Exception as e:
+        print(f"E-posta gönderimi sırasında hata: {e}")
+
 # Ana Fonksiyon
 def main():
     print("Kontrol başlatıldı...")
