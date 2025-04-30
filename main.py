@@ -42,19 +42,26 @@ def search_references_in_pdf(pdf_url):
     except Exception as e:
         print(f"Hata: {e}")
         return []
+import os
+import smtplib
+from email.mime.text import MIMEText
 
-# E-posta gönderme
+# E-posta adresini ve şifreyi ortam değişkenlerinden al
+EMAIL = os.environ['EMAIL']
+EMAIL_PASS = os.environ['EMAIL_PASS']
+
+# E-posta gönderme fonksiyonu
 def send_email(found_refs, pdf_url):
     body = f"Aşağıdaki referanslar bulundu:\n\n{', '.join(found_refs)}\n\nPDF Link: {pdf_url}"
     msg = MIMEText(body)
     msg['Subject'] = "✅ Romanya Vatandaşlık Listesi - Referans Bulundu"
-    msg['From'] = os.environ['romanyabot@gmail.com']
-    msg['To'] = os.environ['yigit.akasma@gmail.com']
+    msg['From'] = EMAIL
+    msg['To'] = "yigit.akasma@gmail.com"
 
+    # E-posta gönderimi
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(os.environ['romanyabot@gmail.com'], os.environ['2330438y'])
-        smtp.send_message(msg)
-
+        smtp.login(EMAIL, EMAIL_PASS)  # Gmail hesabına giriş yap
+        smtp.send_message(msg)  # E-postayı gönder
 # Ana Fonksiyon
 def main():
     print("Kontrol başlatıldı...")
