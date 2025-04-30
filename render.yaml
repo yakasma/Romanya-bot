@@ -1,7 +1,7 @@
 services:
   - type: cron
     name: romanya-bot
-    schedule: "0 5 * * *"  # Türkiye saati 08:00 için UTC 05:00
+    schedule: "0 5 * * *"  # UTC 05:00 = Türkiye saatiyle sabah 08:00
     env: python
     plan: free
     buildCommand: ""
