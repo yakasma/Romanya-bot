@@ -48,11 +48,11 @@ def send_email(found_refs, pdf_url):
     body = f"Aşağıdaki referanslar bulundu:\n\n{', '.join(found_refs)}\n\nPDF Link: {pdf_url}"
     msg = MIMEText(body)
     msg['Subject'] = "✅ Romanya Vatandaşlık Listesi - Referans Bulundu"
-    msg['From'] = os.environ['EMAIL']
-    msg['To'] = os.environ['EMAIL']
+    msg['From'] = os.environ['romanyabot@gmail.com']
+    msg['To'] = os.environ['yigit.akasma@gmail.com']
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(os.environ['EMAIL'], os.environ['EMAIL_PASS'])
+        smtp.login(os.environ['romanyabot@gmail.com'], os.environ['2330438y'])
         smtp.send_message(msg)
 
 # Ana Fonksiyon
