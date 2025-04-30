@@ -2,45 +2,69 @@ import requests
 import fitz  # PyMuPDF
 import smtplib
 from email.mime.text import MIMEText
+from bs4 import BeautifulSoup
+import os
 
 # REFERANSLAR
-reference_numbers = ["ABC123", "XYZ456", "LMN789"]
+REFERENCE_CODES = ["21530/RD/2022", "21522/RD/2022", "21489/RD/2022"]
 
-# PDF İNDİR
-def download_pdf(url, filename):
+# PDF URL'lerini alma
+def get_latest_pdf_links():
+    url = "https://cetatenie.just.ro/ordine-articolul-1-1/"
     response = requests.get(url)
-    with open(filename, 'wb') as f:
-        f.write(response.content)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-# REFERANS ARA
-def search_references_in_pdf(pdf_path, references):
-    found = []
-    doc = fitz.open(pdf_path)
-    for page in doc:
-        text = page.get_text()
-        for ref in references:
-            if ref in text:
-                found.append(ref)
-    return found
+    links = []
+    for a in soup.find_all("a", href=True):
+        href = a['href']
+        if href.lower().endswith(".pdf") and "P" in href:
+            if href.startswith("http"):
+                links.append(href)
+            else:
+                links.append("https://cetatenie.just.ro" + href)
+    return links[:5]  # Son 5 PDF'yi kontrol etmek yeterli
 
-# E-POSTA GÖNDER
-def send_email(found_refs):
-    msg = MIMEText(f"Bulunan referanslar: {', '.join(found_refs)}")
-    msg['Subject'] = "Romanya Vatandaşlık Kontrolü"
-    msg['From'] = "seninmailin@gmail.com"
-    msg['To'] = "seninmailin@gmail.com"
+# PDF'de referans kodu arama
+def search_references_in_pdf(pdf_url):
+    found_refs = []
+    try:
+        response = requests.get(pdf_url)
+        filename = "temp.pdf"
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        doc = fitz.open(filename)
+        for page in doc:
+            text = page.get_text()
+            for ref in REFERENCE_CODES:
+                if ref in text:
+                    found_refs.append(ref)
+        return found_refs
+    except Exception as e:
+        print(f"Hata: {e}")
+        return []
+
+# E-posta gönderme
+def send_email(found_refs, pdf_url):
+    body = f"Aşağıdaki referanslar bulundu:\n\n{', '.join(found_refs)}\n\nPDF Link: {pdf_url}"
+    msg = MIMEText(body)
+    msg['Subject'] = "✅ Romanya Vatandaşlık Listesi - Referans Bulundu"
+    msg['From'] = os.environ['EMAIL']
+    msg['To'] = os.environ['EMAIL']
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login("seninmailin@gmail.com", "GMAIL_APP_SIFRESI")
+        smtp.login(os.environ['EMAIL'], os.environ['EMAIL_PASS'])
         smtp.send_message(msg)
 
+# Ana Fonksiyon
 def main():
-    pdf_url = "https://siteadresin.com/sonuclar.pdf"
-    filename = "sonuclar.pdf"
-    download_pdf(pdf_url, filename)
-    found = search_references_in_pdf(filename, reference_numbers)
-    if found:
-        send_email(found)
+    print("Kontrol başlatıldı...")
+    pdf_links = get_latest_pdf_links()
+    for pdf_url in pdf_links:
+        found = search_references_in_pdf(pdf_url)
+        if found:
+            send_email(found, pdf_url)
+            break  # Birinde bulunduysa diğerlerini kontrol etmeye gerek yok
+    print("Kontrol tamamlandı.")
 
 if __name__ == "__main__":
     main()
